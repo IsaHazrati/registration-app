@@ -1,14 +1,22 @@
-# مرحله ۱: ساخت فرانت‌اند
+# ========== مرحله ۱: ساخت فرانت‌اند ==========
 FROM node:18-alpine AS frontend-builder
 
 WORKDIR /frontend
+
+# کپی فایل‌های package برای نصب وابستگی‌ها
 COPY frontend/package*.json ./
+
+# نصب وابستگی‌ها با استفاده از آینه‌ی چینی (برای سرعت بیشتر)
 RUN npm config set registry https://registry.npmmirror.com
 RUN npm install --network-timeout=600000
-COPY frontend/ .
-RUN npm run build
 
-# مرحله ۲: ساخت بک‌اند
+# کپی بقیه‌ی کدهای فرانت‌اند
+COPY frontend/ .
+
+# اجرای build با استفاده از npx برای جلوگیری از خطای permission
+RUN npx craco build
+
+# ========== مرحله ۲: ساخت بک‌اند ==========
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -20,8 +28,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # کپی کد بک‌اند
 COPY backend/ .
 
-# کپی فرانت‌اند build شده به پوشه‌ی static
+# کپی فایل‌های build شده‌ی فرانت‌اند به پوشه‌ی static
 COPY --from=frontend-builder /frontend/build /app/static
 
-# اجرا
+# اجرای بک‌اند با Uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
