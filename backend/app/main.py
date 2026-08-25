@@ -72,12 +72,29 @@ async def create_admin_via_browser():
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 if os.path.exists(STATIC_DIR):
-    # مونت کردن مسیرهای جداگانه برای تطابق با index.html
-    app.mount("/css", StaticFiles(directory=os.path.join(STATIC_DIR, "css")), name="css")
-    app.mount("/js", StaticFiles(directory=os.path.join(STATIC_DIR, "js")), name="js")
-    app.mount("/media", StaticFiles(directory=os.path.join(STATIC_DIR, "media")), name="media")
-    # (اختیاری) برای فایل‌های دیگر مانند favicon.ico
+    # مسیر اصلی static (برای خود index.html و فایل‌های دیگر)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    
+    # ====== مسیرهای جداگانه برای تطابق با index.html ======
+    # توجه: فایل‌های build شده در پوشه‌ی static/static قرار دارند
+    css_dir = os.path.join(STATIC_DIR, "static", "css")
+    js_dir = os.path.join(STATIC_DIR, "static", "js")
+    
+    if os.path.exists(css_dir):
+        app.mount("/css", StaticFiles(directory=css_dir), name="css")
+    else:
+        print(f"⚠️ پوشه‌ی css در مسیر {css_dir} پیدا نشد!")
+    
+    if os.path.exists(js_dir):
+        app.mount("/js", StaticFiles(directory=js_dir), name="js")
+    else:
+        print(f"⚠️ پوشه‌ی js در مسیر {js_dir} پیدا نشد!")
+    
+    # (اختیاری) برای favicon.ico و سایر فایل‌ها
+    media_dir = os.path.join(STATIC_DIR, "static", "media")
+    if os.path.exists(media_dir):
+        app.mount("/media", StaticFiles(directory=media_dir), name="media")
+    
     print(f"✅ پوشه‌ی static در مسیر {STATIC_DIR} پیدا شد")
 else:
     print(f"❌ پوشه‌ی static در مسیر {STATIC_DIR} پیدا نشد!")
