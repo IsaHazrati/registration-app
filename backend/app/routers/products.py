@@ -26,7 +26,7 @@ def get_public_products(skip: int = 0, limit: int = 100, db: Session = Depends(g
 def create_product(
     product: schemas.ProductCreate,
     db: Session = Depends(get_db),
-    admin: str = Depends(verify_admin)  # فقط ادمین می‌تواند محصول اضافه کند
+    admin: str = Depends(verify_admin)
 ):
     """ایجاد محصول جدید توسط ادمین"""
     return crud.create_product(db, product)

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from . import models
@@ -12,10 +13,18 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Registration System", version="1.0.0")
 
-# ====== ایجاد ادمین در زمان startup (دقیقاً بعد از اتصال به دیتابیس) ======
+# ====== CORS ======
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ====== ایجاد ادمین در زمان startup ======
 @app.on_event("startup")
 def create_default_admin():
-    """این تابع در زمان اجرا (وقتی دیتابیس در دسترس است) اجرا می‌شود."""
     try:
         db = SessionLocal()
         username = "admin"
@@ -34,9 +43,7 @@ def create_default_admin():
     except Exception as e:
         print(f"⚠️ خطا در ایجاد ادمین: {e}")
 
-# ================================================
 # ====== مسیرهای API ======
-# ================================================
 from .routers import products, requests, admin, settings
 
 app.include_router(products.router, prefix="/api/products", tags=["products"])
@@ -44,9 +51,7 @@ app.include_router(requests.router, prefix="/api/requests", tags=["requests"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 
-# ================================================
-# ====== مسیر موقت برای ایجاد ادمین (در صورت نیاز) ======
-# ================================================
+# ====== مسیر موقت برای ایجاد ادمین ======
 @app.get("/create-admin")
 async def create_admin_via_browser():
     db = SessionLocal()
@@ -70,16 +75,12 @@ async def create_admin_via_browser():
         "password": password
     }
 
-# ================================================
-# ====== سرویس‌دهی فایل‌های استاتیک (فرانت‌اند) ======
-# ================================================
+# ====== سرویس‌دهی فایل‌های استاتیک ======
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 if os.path.exists(STATIC_DIR):
-    # مونت کردن کل پوشه‌ی static روی مسیر /static
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     
-    # همچنین برای تطابق با مسیرهای index.html
     css_dir = os.path.join(STATIC_DIR, "css")
     js_dir = os.path.join(STATIC_DIR, "js")
     
@@ -92,9 +93,7 @@ if os.path.exists(STATIC_DIR):
 else:
     print(f"❌ پوشه‌ی static در مسیر {STATIC_DIR} پیدا نشد!")
 
-# ================================================
 # ====== مسیرهای SPA ======
-# ================================================
 @app.get("/")
 @app.get("/admin/login")
 @app.get("/admin/dashboard")
@@ -104,7 +103,7 @@ async def serve_index():
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
 
-# ====== Fallback برای سایر مسیرها ======
+# ====== Fallback ======
 @app.get("/{path:path}")
 async def serve_spa(path: str):
     if path.startswith("api/") or path.startswith("admin/"):
