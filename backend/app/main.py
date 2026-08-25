@@ -9,7 +9,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Registration System", version="1.0.0")
 
-# مسیر پوشه‌ی استاتیک (جایی که فرانت‌اند build شده قرار دارد)
+# ====== مسیر پوشه‌ی استاتیک ======
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 if os.path.exists(STATIC_DIR):
@@ -22,20 +22,17 @@ app.include_router(requests.router, prefix="/api/requests", tags=["requests"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 
-# ====== مسیرهای فرانت‌اند ======
+# ====== مسیرهای فرانت‌اند (SPA) ======
 @app.get("/")
+@app.get("/admin/login")
+@app.get("/admin/dashboard")
 async def serve_index():
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
 
-@app.get("/admin/login")
-@app.get("/admin/dashboard")
-async def serve_admin_pages():
-    return await serve_index()
-
-# Fallback برای SPA (هر مسیر دیگر به index.html برود)
+# Fallback برای SPA
 @app.get("/{path:path}")
 async def serve_spa(path: str):
     if path.startswith("api/") or path.startswith("admin/"):

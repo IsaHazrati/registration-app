@@ -6,15 +6,18 @@ WORKDIR /frontend
 # کپی فایل‌های package برای نصب وابستگی‌ها
 COPY frontend/package*.json ./
 
-# نصب وابستگی‌ها با استفاده از آینه‌ی چینی (برای سرعت بیشتر)
+# تنظیم آینه برای سرعت بیشتر
 RUN npm config set registry https://registry.npmmirror.com
+
+# نصب وابستگی‌های پروژه
 RUN npm install --network-timeout=600000
 
 # کپی بقیه‌ی کدهای فرانت‌اند
 COPY frontend/ .
 
-# اجرای build با استفاده از npx برای جلوگیری از خطای permission
-RUN npx craco build
+# ===== نصب سراسری craco و اجرای build =====
+RUN npm install -g @craco/craco
+RUN craco build
 
 # ========== مرحله ۲: ساخت بک‌اند ==========
 FROM python:3.11-slim
