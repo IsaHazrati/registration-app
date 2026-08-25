@@ -67,12 +67,16 @@ async def create_admin_via_browser():
     }
 
 # ================================================
-# ====== سرویس‌دهی فایل‌های استاتیک (فرانت‌اند) ======
+# ====== سرویس‌دهی فایل‌های استاتیک ======
 # ================================================
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 if os.path.exists(STATIC_DIR):
-    # مونت کردن پوشه‌ی static روی مسیر /static
+    # مونت کردن مسیرهای جداگانه برای تطابق با index.html
+    app.mount("/css", StaticFiles(directory=os.path.join(STATIC_DIR, "css")), name="css")
+    app.mount("/js", StaticFiles(directory=os.path.join(STATIC_DIR, "js")), name="js")
+    app.mount("/media", StaticFiles(directory=os.path.join(STATIC_DIR, "media")), name="media")
+    # (اختیاری) برای فایل‌های دیگر مانند favicon.ico
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     print(f"✅ پوشه‌ی static در مسیر {STATIC_DIR} پیدا شد")
 else:
@@ -93,7 +97,7 @@ async def serve_index():
 # ====== Fallback برای هر مسیر دیگر (به جز APIها) ======
 @app.get("/{path:path}")
 async def serve_spa(path: str):
-    # اگر مسیر با api/ یا admin/ شروع شود، 404 برگردان (تا با APIها تداخل نداشته باشد)
+    # اگر مسیر با api/ یا admin/ شروع شود، 404 برگردان
     if path.startswith("api/") or path.startswith("admin/"):
         raise HTTPException(status_code=404, detail="Not found")
     
