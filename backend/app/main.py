@@ -12,23 +12,27 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Registration System", version="1.0.0")
 
-# ====== ایجاد ادمین در زمان startup ======
+# ====== ایجاد ادمین در زمان startup (دقیقاً بعد از اتصال به دیتابیس) ======
 @app.on_event("startup")
 def create_default_admin():
-    db = SessionLocal()
-    username = "admin"
-    password = "admin123"
-    
-    existing = db.query(Admin).filter(Admin.username == username).first()
-    if not existing:
-        hashed = utils.hash_password(password)
-        admin = Admin(username=username, hashed_password=hashed)
-        db.add(admin)
-        db.commit()
-        print(f"✅ ادمین با نام کاربری '{username}' و رمز '{password}' ایجاد شد")
-    else:
-        print("ℹ️ ادمین قبلاً وجود دارد")
-    db.close()
+    """این تابع در زمان اجرا (وقتی دیتابیس در دسترس است) اجرا می‌شود."""
+    try:
+        db = SessionLocal()
+        username = "admin"
+        password = "admin123"
+        
+        existing = db.query(Admin).filter(Admin.username == username).first()
+        if not existing:
+            hashed = utils.hash_password(password)
+            admin = Admin(username=username, hashed_password=hashed)
+            db.add(admin)
+            db.commit()
+            print(f"✅ ادمین با نام کاربری '{username}' و رمز '{password}' ایجاد شد")
+        else:
+            print("ℹ️ ادمین قبلاً وجود دارد")
+        db.close()
+    except Exception as e:
+        print(f"⚠️ خطا در ایجاد ادمین: {e}")
 
 # ================================================
 # ====== مسیرهای API ======
@@ -41,7 +45,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 
 # ================================================
-# ====== مسیر موقت برای ایجاد ادمین ======
+# ====== مسیر موقت برای ایجاد ادمین (در صورت نیاز) ======
 # ================================================
 @app.get("/create-admin")
 async def create_admin_via_browser():
@@ -75,8 +79,7 @@ if os.path.exists(STATIC_DIR):
     # مونت کردن کل پوشه‌ی static روی مسیر /static
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     
-    # همچنین برای تطابق با مسیرهای index.html، مسیرهای /css و /js را نیز مونت می‌کنیم
-    # پس از ساده‌سازی ساختار، فایل‌ها مستقیماً در /app/static/css و /app/static/js قرار دارند
+    # همچنین برای تطابق با مسیرهای index.html
     css_dir = os.path.join(STATIC_DIR, "css")
     js_dir = os.path.join(STATIC_DIR, "js")
     

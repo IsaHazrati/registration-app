@@ -9,7 +9,6 @@ RUN npm install --network-timeout=600000
 
 COPY frontend/ .
 
-# ====== رفع خطای craco: استفاده از npx و تغییر دسترسی ======
 RUN chmod +x node_modules/.bin/craco
 RUN npx craco build
 
@@ -34,7 +33,7 @@ RUN if [ -d "/app/static/static" ]; then \
         rmdir /app/static/static; \
     fi
 
-# ====== ایجاد ادمین در زمان Build (اسکریپت یک‌خطی) ======
-RUN python -c "import sys; sys.path.append('/app'); from app.database import SessionLocal; from app.models import Admin; from app.routers import utils; db = SessionLocal(); username = 'admin'; password = 'admin123'; existing = db.query(Admin).filter(Admin.username == username).first(); (lambda: (db.add(Admin(username=username, hashed_password=utils.hash_password(password))), db.commit()))() if not existing else None; db.close(); print('✅ ادمین با نام کاربری admin و رمز admin123 ایجاد شد' if not existing else 'ℹ️ ادمین قبلاً وجود دارد')"
+# ====== ایجاد ادمین در زمان Build حذف شد! ======
+# (ادمین در زمان startup با استفاده از @app.on_event ایجاد می‌شود)
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
