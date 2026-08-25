@@ -103,6 +103,16 @@ async def serve_index():
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
 
+# ======  لیست تمام روت‌ها ======
+@app.get("/routes")
+def list_routes():
+    routes = []
+    for route in app.routes:
+        routes.append({
+            "path": route.path,
+            "methods": list(route.methods) if hasattr(route, "methods") else []
+        })
+    return routes
 # ====== Fallback ======
 @app.get("/{path:path}")
 async def serve_spa(path: str):
