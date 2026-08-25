@@ -13,7 +13,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/", response_model=schemas.Request)
+@router.post("", response_model=schemas.Request)
 def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)):
     # Check if employee code already exists
     existing = crud.get_request_by_employee_code(db, request.employee_code)

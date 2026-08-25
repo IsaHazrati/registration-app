@@ -25,7 +25,7 @@ def get_public_products(skip: int = 0, limit: int = 100, db: Session = Depends(g
     return crud.get_products(db, skip=skip, limit=limit)
 
 # ========== روت‌های مدیریت ==========
-@router.post("/", response_model=schemas.Product)
+@router.post("", response_model=schemas.Product)
 def create_product(
     product: schemas.ProductCreate,
     db: Session = Depends(get_db),
