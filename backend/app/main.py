@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Registration System", version="1.0.0")
 
-# ====== ایجاد ادمین در زمان startup (اگر وجود نداشت) ======
+# ====== ایجاد ادمین در زمان startup ======
 @app.on_event("startup")
 def create_default_admin():
     db = SessionLocal()
@@ -31,7 +31,7 @@ def create_default_admin():
     db.close()
 
 # ================================================
-# ====== مسیرهای API (قبل از هر چیز) ======
+# ====== مسیرهای API ======
 # ================================================
 from .routers import products, requests, admin, settings
 
@@ -67,40 +67,30 @@ async def create_admin_via_browser():
     }
 
 # ================================================
-# ====== سرویس‌دهی فایل‌های استاتیک ======
+# ====== سرویس‌دهی فایل‌های استاتیک (فرانت‌اند) ======
 # ================================================
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 if os.path.exists(STATIC_DIR):
-    # مسیر اصلی static (برای خود index.html و فایل‌های دیگر)
+    # مونت کردن کل پوشه‌ی static روی مسیر /static
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     
-    # ====== مسیرهای جداگانه برای تطابق با index.html ======
-    # توجه: فایل‌های build شده در پوشه‌ی static/static قرار دارند
-    css_dir = os.path.join(STATIC_DIR, "static", "css")
-    js_dir = os.path.join(STATIC_DIR, "static", "js")
+    # همچنین برای تطابق با مسیرهای index.html، مسیرهای /css و /js را نیز مونت می‌کنیم
+    # پس از ساده‌سازی ساختار، فایل‌ها مستقیماً در /app/static/css و /app/static/js قرار دارند
+    css_dir = os.path.join(STATIC_DIR, "css")
+    js_dir = os.path.join(STATIC_DIR, "js")
     
     if os.path.exists(css_dir):
         app.mount("/css", StaticFiles(directory=css_dir), name="css")
-    else:
-        print(f"⚠️ پوشه‌ی css در مسیر {css_dir} پیدا نشد!")
-    
     if os.path.exists(js_dir):
         app.mount("/js", StaticFiles(directory=js_dir), name="js")
-    else:
-        print(f"⚠️ پوشه‌ی js در مسیر {js_dir} پیدا نشد!")
-    
-    # (اختیاری) برای favicon.ico و سایر فایل‌ها
-    media_dir = os.path.join(STATIC_DIR, "static", "media")
-    if os.path.exists(media_dir):
-        app.mount("/media", StaticFiles(directory=media_dir), name="media")
     
     print(f"✅ پوشه‌ی static در مسیر {STATIC_DIR} پیدا شد")
 else:
     print(f"❌ پوشه‌ی static در مسیر {STATIC_DIR} پیدا نشد!")
 
 # ================================================
-# ====== مسیرهای SPA (همه مسیرهای دیگر به index.html بروند) ======
+# ====== مسیرهای SPA ======
 # ================================================
 @app.get("/")
 @app.get("/admin/login")
@@ -111,10 +101,9 @@ async def serve_index():
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
 
-# ====== Fallback برای هر مسیر دیگر (به جز APIها) ======
+# ====== Fallback برای سایر مسیرها ======
 @app.get("/{path:path}")
 async def serve_spa(path: str):
-    # اگر مسیر با api/ یا admin/ شروع شود، 404 برگردان
     if path.startswith("api/") or path.startswith("admin/"):
         raise HTTPException(status_code=404, detail="Not found")
     
