@@ -43,7 +43,9 @@ def create_default_admin():
     except Exception as e:
         print(f"⚠️ خطا در ایجاد ادمین: {e}")
 
+# ================================================
 # ====== مسیرهای API ======
+# ================================================
 from .routers import products, requests, admin, settings
 
 app.include_router(products.router, prefix="/api/products", tags=["products"])
@@ -51,7 +53,9 @@ app.include_router(requests.router, prefix="/api/requests", tags=["requests"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 
+# ================================================
 # ====== مسیر موقت برای ایجاد ادمین ======
+# ================================================
 @app.get("/create-admin")
 async def create_admin_via_browser():
     db = SessionLocal()
@@ -75,7 +79,9 @@ async def create_admin_via_browser():
         "password": password
     }
 
-# ====== سرویس‌دهی فایل‌های استاتیک ======
+# ================================================
+# ====== سرویس‌دهی فایل‌های استاتیک (فرانت‌اند) ======
+# ================================================
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 if os.path.exists(STATIC_DIR):
@@ -93,7 +99,9 @@ if os.path.exists(STATIC_DIR):
 else:
     print(f"❌ پوشه‌ی static در مسیر {STATIC_DIR} پیدا نشد!")
 
+# ================================================
 # ====== مسیرهای SPA ======
+# ================================================
 @app.get("/")
 @app.get("/admin/login")
 @app.get("/admin/dashboard")
@@ -103,17 +111,7 @@ async def serve_index():
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
 
-# ======  لیست تمام روت‌ها ======
-@app.get("/routes")
-def list_routes():
-    routes = []
-    for route in app.routes:
-        routes.append({
-            "path": route.path,
-            "methods": list(route.methods) if hasattr(route, "methods") else []
-        })
-    return routes
-# ====== Fallback ======
+# ====== Fallback برای سایر مسیرها ======
 @app.get("/{path:path}")
 async def serve_spa(path: str):
     if path.startswith("api/") or path.startswith("admin/"):
@@ -123,3 +121,16 @@ async def serve_spa(path: str):
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
+
+# ================================================
+# ====== دیباگ: لیست تمام روت‌ها ======
+# ================================================
+@app.get("/routes")
+def list_routes():
+    routes = []
+    for route in app.routes:
+        routes.append({
+            "path": route.path,
+            "methods": list(route.methods) if hasattr(route, "methods") else []
+        })
+    return routes

@@ -14,6 +14,11 @@ def get_db():
     finally:
         db.close()
 
+# ====== روت تست برای اطمینان از بارگذاری فایل ======
+@router.get("/test")
+def test_products_router():
+    return {"message": "Products router is working!"}
+
 # ========== روت‌های عمومی ==========
 @router.get("/public", response_model=List[schemas.Product])
 def get_public_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
