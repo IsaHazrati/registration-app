@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Registration System", version="1.0.0")
 
-# ====== ایجاد ادمین در زمان startup ======
+# ====== ایجاد ادمین در زمان startup (اگر وجود نداشت) ======
 @app.on_event("startup")
 def create_default_admin():
     db = SessionLocal()
@@ -31,7 +31,7 @@ def create_default_admin():
     db.close()
 
 # ================================================
-# ====== مسیرهای API (قبل از StaticFiles) ======
+# ====== مسیرهای API (قبل از هر چیز) ======
 # ================================================
 from .routers import products, requests, admin, settings
 
@@ -40,7 +40,9 @@ app.include_router(requests.router, prefix="/api/requests", tags=["requests"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 
+# ================================================
 # ====== مسیر موقت برای ایجاد ادمین ======
+# ================================================
 @app.get("/create-admin")
 async def create_admin_via_browser():
     db = SessionLocal()
@@ -70,31 +72,28 @@ async def create_admin_via_browser():
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 
 if os.path.exists(STATIC_DIR):
-    # Mount static files on /static path
+    # مونت کردن پوشه‌ی static روی مسیر /static
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    print(f"✅ پوشه‌ی static در مسیر {STATIC_DIR} پیدا شد")
 else:
-    print("⚠️ پوشه‌ی static پیدا نشد!")
+    print(f"❌ پوشه‌ی static در مسیر {STATIC_DIR} پیدا نشد!")
 
-# ====== مسیرهای SPA (بعد از APIها) ======
+# ================================================
+# ====== مسیرهای SPA (همه مسیرهای دیگر به index.html بروند) ======
+# ================================================
 @app.get("/")
+@app.get("/admin/login")
+@app.get("/admin/dashboard")
 async def serve_index():
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
 
-@app.get("/admin/login")
-@app.get("/admin/dashboard")
-async def serve_admin_pages():
-    index_path = os.path.join(STATIC_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"message": "Frontend not found"}
-
-# ====== Fallback برای SPA (هر مسیر دیگر) ======
+# ====== Fallback برای هر مسیر دیگر (به جز APIها) ======
 @app.get("/{path:path}")
 async def serve_spa(path: str):
-    # اگر مسیر با api/ یا admin/ شروع شود، 404 برگردان
+    # اگر مسیر با api/ یا admin/ شروع شود، 404 برگردان (تا با APIها تداخل نداشته باشد)
     if path.startswith("api/") or path.startswith("admin/"):
         raise HTTPException(status_code=404, detail="Not found")
     
