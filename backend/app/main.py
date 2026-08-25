@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from . import models
@@ -12,26 +12,9 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Registration System", version="1.0.0")
 
-# ====== مسیر پوشه‌ی استاتیک ======
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
-
-# ====== سرویس‌دهی فایل‌های استاتیک با پشتیبانی از SPA ======
-if os.path.exists(STATIC_DIR):
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
-
-# ====== مسیرهای API ======
-from .routers import products, requests, admin, settings
-app.include_router(products.router, prefix="/api/products", tags=["products"])
-app.include_router(requests.router, prefix="/api/requests", tags=["requests"])
-app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
-app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
-
-# ================================================
-# ====== ایجاد خودکار ادمین در هنگام راه‌اندازی ======
-# ================================================
+# ====== ایجاد ادمین در زمان startup ======
 @app.on_event("startup")
 def create_default_admin():
-    """در زمان اجرا، اگر ادمین وجود نداشت، یکی ایجاد می‌کند."""
     db = SessionLocal()
     username = "admin"
     password = "admin123"
@@ -48,11 +31,18 @@ def create_default_admin():
     db.close()
 
 # ================================================
-# ====== مسیر موقت برای ایجاد ادمین (از طریق مرورگر) ======
+# ====== مسیرهای API (قبل از StaticFiles) ======
 # ================================================
+from .routers import products, requests, admin, settings
+
+app.include_router(products.router, prefix="/api/products", tags=["products"])
+app.include_router(requests.router, prefix="/api/requests", tags=["requests"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
+
+# ====== مسیر موقت برای ایجاد ادمین ======
 @app.get("/create-admin")
 async def create_admin_via_browser():
-    """این مسیر را در مرورگر باز کنید تا ادمین ساخته شود."""
     db = SessionLocal()
     username = "admin"
     password = "admin123"
@@ -75,23 +65,39 @@ async def create_admin_via_browser():
     }
 
 # ================================================
-# ====== مسیرهای فرانت‌اند (SPA) ======
+# ====== سرویس‌دهی فایل‌های استاتیک (فرانت‌اند) ======
 # ================================================
-@app.get("/admin/login")
-@app.get("/admin/dashboard")
-async def serve_admin_pages():
-    """سرویس‌دهی صفحات مدیریت"""
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
+
+if os.path.exists(STATIC_DIR):
+    # Mount static files on /static path
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+else:
+    print("⚠️ پوشه‌ی static پیدا نشد!")
+
+# ====== مسیرهای SPA (بعد از APIها) ======
+@app.get("/")
+async def serve_index():
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Frontend not found"}
 
-# Fallback برای SPA (هر مسیر دیگر به index.html برود)
+@app.get("/admin/login")
+@app.get("/admin/dashboard")
+async def serve_admin_pages():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Frontend not found"}
+
+# ====== Fallback برای SPA (هر مسیر دیگر) ======
 @app.get("/{path:path}")
 async def serve_spa(path: str):
-    """سرویس‌دهی سایر مسیرها (برای ریدایرکت به index.html)"""
+    # اگر مسیر با api/ یا admin/ شروع شود، 404 برگردان
     if path.startswith("api/") or path.startswith("admin/"):
-        return {"message": f"Path {path} not found"}
+        raise HTTPException(status_code=404, detail="Not found")
+    
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
