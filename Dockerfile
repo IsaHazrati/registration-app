@@ -8,7 +8,10 @@ RUN npm config set registry https://registry.npmmirror.com
 RUN npm install --network-timeout=600000
 
 COPY frontend/ .
-RUN npm run build
+
+# ====== رفع خطای craco: استفاده از npx و تغییر دسترسی ======
+RUN chmod +x node_modules/.bin/craco
+RUN npx craco build
 
 # ========== مرحله ۲: ساخت بک‌اند ==========
 FROM python:3.11-slim
