@@ -14,17 +14,21 @@ def get_db():
     finally:
         db.close()
 
+# ========== روت‌های عمومی (بدون احراز هویت) ==========
 @router.get("/public", response_model=List[schemas.Product])
 def get_public_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """دریافت لیست محصولات برای نمایش به کاربر عادی"""
     products = crud.get_products(db, skip=skip, limit=limit)
     return products
 
+# ========== روت‌های مدیریت (نیاز به احراز هویت ادمین) ==========
 @router.post("/", response_model=schemas.Product)
 def create_product(
     product: schemas.ProductCreate,
     db: Session = Depends(get_db),
-    admin: str = Depends(verify_admin)
+    admin: str = Depends(verify_admin)  # فقط ادمین می‌تواند محصول اضافه کند
 ):
+    """ایجاد محصول جدید توسط ادمین"""
     return crud.create_product(db, product)
 
 @router.put("/{product_id}", response_model=schemas.Product)
@@ -34,6 +38,7 @@ def update_product(
     db: Session = Depends(get_db),
     admin: str = Depends(verify_admin)
 ):
+    """ویرایش محصول توسط ادمین"""
     db_product = crud.update_product(db, product_id, product)
     if not db_product:
         raise HTTPException(status_code=404, detail="محصول یافت نشد")
@@ -45,6 +50,7 @@ def delete_product(
     db: Session = Depends(get_db),
     admin: str = Depends(verify_admin)
 ):
+    """حذف محصول توسط ادمین"""
     db_product = crud.delete_product(db, product_id)
     if not db_product:
         raise HTTPException(status_code=404, detail="محصول یافت نشد")
