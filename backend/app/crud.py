@@ -33,18 +33,50 @@ def delete_product(db: Session, product_id: int):
         db.commit()
     return db_product
 
+# ========== Service Location CRUD (← فیلد جدید: محل خدمت) ==========
+def get_service_location(db: Session, service_location_id: int):
+    return db.query(models.ServiceLocation).filter(models.ServiceLocation.id == service_location_id).first()
+
+def get_service_locations(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.ServiceLocation).order_by(models.ServiceLocation.name).offset(skip).limit(limit).all()
+
+def create_service_location(db: Session, service_location: schemas.ServiceLocationCreate):
+    db_obj = models.ServiceLocation(**service_location.dict())
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
+
+def update_service_location(db: Session, service_location_id: int, service_location: schemas.ServiceLocationCreate):
+    db_obj = get_service_location(db, service_location_id)
+    if db_obj:
+        for key, value in service_location.dict().items():
+            setattr(db_obj, key, value)
+        db.commit()
+        db.refresh(db_obj)
+    return db_obj
+
+def delete_service_location(db: Session, service_location_id: int):
+    db_obj = get_service_location(db, service_location_id)
+    if db_obj:
+        db.delete(db_obj)
+        db.commit()
+    return db_obj
+
 # ========== Request CRUD ==========
 def get_request_by_employee_code(db: Session, employee_code: str):
     return db.query(models.Request).filter(models.Request.employee_code == employee_code).first()
 
 def get_requests(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Request).options(
-        joinedload(models.Request.items).joinedload(models.RequestItem.product)
+        joinedload(models.Request.items).joinedload(models.RequestItem.product),
+        joinedload(models.Request.service_location)  # ← فیلد جدید: محل خدمت
     ).offset(skip).limit(limit).all()
 
 def get_all_requests_with_items(db: Session):
     return db.query(models.Request).options(
-        joinedload(models.Request.items).joinedload(models.RequestItem.product)
+        joinedload(models.Request.items).joinedload(models.RequestItem.product),
+        joinedload(models.Request.service_location)  # ← فیلد جدید: محل خدمت
     ).all()
 
 def create_request(db: Session, request: schemas.RequestCreate):
@@ -53,6 +85,7 @@ def create_request(db: Session, request: schemas.RequestCreate):
         full_name=request.full_name,
         phone_number=request.phone_number,  # ← فیلد جدید
         employment_status=request.employment_status,
+        service_location_id=request.service_location_id,  # ← فیلد جدید: محل خدمت
         admin_description=request.admin_description
     )
     db.add(db_request)
@@ -89,6 +122,8 @@ def update_request(db: Session, employee_code: str, request: schemas.RequestUpda
         db_request.phone_number = request.phone_number
     if request.employment_status:
         db_request.employment_status = request.employment_status
+    if request.service_location_id is not None:  # ← فیلد جدید: محل خدمت
+        db_request.service_location_id = request.service_location_id
     if request.admin_description is not None:
         db_request.admin_description = request.admin_description
     

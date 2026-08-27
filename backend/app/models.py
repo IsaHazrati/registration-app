@@ -19,12 +19,14 @@ class Request(Base):
     full_name = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=True)  # ← فیلد جدید
     employment_status = Column(String(20), nullable=False)
+    service_location_id = Column(Integer, ForeignKey("service_locations.id", ondelete="SET NULL"), nullable=True)  # ← فیلد جدید: محل خدمت
     admin_description = Column(Text, nullable=True)
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     is_editable = Column(Boolean, default=True)
 
     items = relationship("RequestItem", back_populates="request", cascade="all, delete-orphan")
+    service_location = relationship("ServiceLocation")  # ← فیلد جدید: محل خدمت
 
 class RequestItem(Base):
     __tablename__ = "request_items"
@@ -35,6 +37,12 @@ class RequestItem(Base):
 
     request = relationship("Request", back_populates="items")
     product = relationship("Product")
+
+class ServiceLocation(Base):  # ← جدول جدید: محل خدمت
+    __tablename__ = "service_locations"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), unique=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Admin(Base):
     __tablename__ = "admins"

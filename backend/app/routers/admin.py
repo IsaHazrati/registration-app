@@ -59,7 +59,7 @@ def export_requests_csv(db: Session = Depends(get_db), admin: str = Depends(veri
     output = StringIO()
     writer = csv.writer(output)
     
-    headers = ["کد پرسنلی", "نام و نام خانوادگی", "شماره تماس", "وضعیت اشتغال", "تاریخ ثبت", "توضیحات ادمین"] + product_names
+    headers = ["کد پرسنلی", "نام و نام خانوادگی", "شماره تماس", "وضعیت اشتغال", "محل خدمت", "تاریخ ثبت", "توضیحات ادمین"] + product_names
     writer.writerow(headers)
     
     for req in requests:
@@ -69,6 +69,7 @@ def export_requests_csv(db: Session = Depends(get_db), admin: str = Depends(veri
             req.full_name,
             req.phone_number or "",
             req.employment_status,
+            req.service_location.name if req.service_location else "",  # ← فیلد جدید: محل خدمت
             req.submitted_at.strftime("%Y-%m-%d %H:%M"),
             req.admin_description or ""
         ]
@@ -93,7 +94,7 @@ def export_requests_excel(db: Session = Depends(get_db), admin: str = Depends(ve
     ws = wb.active
     ws.title = "درخواست‌ها"
     
-    headers = ["کد پرسنلی", "نام و نام خانوادگی", "شماره تماس", "وضعیت اشتغال", "تاریخ ثبت", "توضیحات ادمین"] + product_names
+    headers = ["کد پرسنلی", "نام و نام خانوادگی", "شماره تماس", "وضعیت اشتغال", "محل خدمت", "تاریخ ثبت", "توضیحات ادمین"] + product_names
     ws.append(headers)
     
     for req in requests:
@@ -103,6 +104,7 @@ def export_requests_excel(db: Session = Depends(get_db), admin: str = Depends(ve
             req.full_name,
             req.phone_number or "",
             req.employment_status,
+            req.service_location.name if req.service_location else "",  # ← فیلد جدید: محل خدمت
             req.submitted_at.strftime("%Y-%m-%d %H:%M"),
             req.admin_description or ""
         ]

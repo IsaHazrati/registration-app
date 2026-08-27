@@ -18,6 +18,19 @@ class Product(ProductBase):
     class Config:
         from_attributes = True
 
+# Service Location Schemas (← فیلد جدید: محل خدمت)
+class ServiceLocationBase(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+
+class ServiceLocationCreate(ServiceLocationBase):
+    pass
+
+class ServiceLocation(ServiceLocationBase):
+    id: int
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
 # Request Item Schemas
 class RequestItemBase(BaseModel):
     product_id: int
@@ -38,6 +51,7 @@ class RequestBase(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     phone_number: Optional[str] = Field(None, max_length=20)
     employment_status: str
+    service_location_id: int  # ← فیلد جدید: محل خدمت
     admin_description: Optional[str] = None
 
     @validator('employment_status')
@@ -59,6 +73,7 @@ class RequestUpdate(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     employment_status: Optional[str] = None
+    service_location_id: Optional[int] = None  # ← فیلد جدید: محل خدمت
     items: Optional[List[RequestItemCreate]] = None
     admin_description: Optional[str] = None
 
@@ -74,6 +89,7 @@ class Request(RequestBase):
     updated_at: Optional[datetime]
     is_editable: bool
     items: List[RequestItem]
+    service_location: Optional[ServiceLocation] = None  # ← فیلد جدید: محل خدمت
     class Config:
         from_attributes = True
 

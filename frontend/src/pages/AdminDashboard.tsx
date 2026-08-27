@@ -10,6 +10,11 @@ const AdminDashboard: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editFormData, setEditFormData] = useState({ name: '', type: '', max_quantity: 1, description: '' });
   const [showEditModal, setShowEditModal] = useState(false);
+  const [serviceLocations, setServiceLocations] = useState<any[]>([]);
+  const [newServiceLocation, setNewServiceLocation] = useState({ name: '' });
+  const [editingServiceLocation, setEditingServiceLocation] = useState<any>(null);
+  const [editServiceLocationData, setEditServiceLocationData] = useState({ name: '' });
+  const [showEditServiceLocationModal, setShowEditServiceLocationModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [editingDescription, setEditingDescription] = useState(false);
@@ -29,15 +34,17 @@ const AdminDashboard: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [productsRes, requestsRes, deadlineRes] = await Promise.all([
+      const [productsRes, requestsRes, deadlineRes, serviceLocationsRes] = await Promise.all([
         axios.get('/api/products/public'),
         axios.get('/api/admin/requests', { headers }),
-        axios.get('/api/settings/deadline')
+        axios.get('/api/settings/deadline'),
+        axios.get('/api/service-locations/public')
       ]);
       
       setProducts(productsRes.data);
       setRequests(requestsRes.data);
       setDeadline(deadlineRes.data.edit_deadline || '');
+      setServiceLocations(serviceLocationsRes.data);
     } catch (error: any) {
       if (error.response?.status === 401) {
         navigate('/admin/login');
@@ -101,6 +108,53 @@ const AdminDashboard: React.FC = () => {
       fetchData();
     } catch (error: any) {
       setMessage('❌ خطا در حذف محصول');
+      console.error(error);
+    }
+  };
+
+  const handleAddServiceLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.post('/api/service-locations', newServiceLocation, { headers });
+      setNewServiceLocation({ name: '' });
+      setMessage('✅ محل خدمت با موفقیت اضافه شد');
+      fetchData();
+    } catch (error: any) {
+      setMessage('❌ خطا در افزودن محل خدمت');
+      console.error(error);
+    }
+  };
+
+  const handleEditServiceLocation = (location: any) => {
+    setEditingServiceLocation(location);
+    setEditServiceLocationData({ name: location.name });
+    setShowEditServiceLocationModal(true);
+  };
+
+  const handleUpdateServiceLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.put(`/api/service-locations/${editingServiceLocation.id}`, editServiceLocationData, { headers });
+      setMessage('✅ محل خدمت با موفقیت ویرایش شد');
+      setShowEditServiceLocationModal(false);
+      fetchData();
+    } catch (error: any) {
+      setMessage('❌ خطا در ویرایش محل خدمت');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteServiceLocation = async (id: number) => {
+    if (!window.confirm('آیا از حذف این محل خدمت مطمئن هستید؟')) return;
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`/api/service-locations/${id}`, { headers });
+      setMessage('✅ محل خدمت با موفقیت حذف شد');
+      fetchData();
+    } catch (error: any) {
+      setMessage('❌ خطا در حذف محل خدمت');
       console.error(error);
     }
   };
@@ -345,6 +399,63 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* مدیریت محل‌های خدمت */}
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">مدیریت محل‌های خدمت</h2>
+
+          <form onSubmit={handleAddServiceLocation} className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="نام محل خدمت"
+              required
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm sm:col-span-2"
+              value={newServiceLocation.name}
+              onChange={(e) => setNewServiceLocation({ name: e.target.value })}
+            />
+            <button type="submit" className="bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base">
+              افزودن محل خدمت
+            </button>
+          </form>
+
+          <div className="overflow-x-auto -mx-4 sm:-mx-0">
+            <div className="min-w-full inline-block align-middle">
+              <div className="overflow-hidden shadow sm:rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">نام</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عملیات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {serviceLocations.map((location) => (
+                      <tr key={location.id}>
+                        <td className="px-3 py-2 text-sm break-words max-w-[150px] sm:max-w-[250px]">
+                          {location.name}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <button
+                            onClick={() => handleEditServiceLocation(location)}
+                            className="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 text-xs sm:text-sm ml-1"
+                          >
+                            ویرایش
+                          </button>
+                          <button
+                            onClick={() => handleDeleteServiceLocation(location.id)}
+                            className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 text-xs sm:text-sm"
+                          >
+                            حذف
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* مدیریت درخواست‌ها */}
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">مدیریت درخواست‌ها</h2>
@@ -358,6 +469,7 @@ const AdminDashboard: React.FC = () => {
                       <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">کد پرسنلی</th>
                       <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">نام</th>
                       <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">وضعیت</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">محل خدمت</th>
                       <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاریخ ثبت</th>
                       <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">قابل ویرایش</th>
                       <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عملیات</th>
@@ -369,6 +481,7 @@ const AdminDashboard: React.FC = () => {
                         <td className="px-3 py-2 text-sm whitespace-nowrap">{req.employee_code}</td>
                         <td className="px-3 py-2 text-sm whitespace-nowrap">{req.full_name}</td>
                         <td className="px-3 py-2 text-sm whitespace-nowrap">{req.employment_status}</td>
+                        <td className="px-3 py-2 text-sm break-words max-w-[120px]">{req.service_location?.name || '-'}</td>
                         <td className="px-3 py-2 text-sm whitespace-nowrap">{new Date(req.submitted_at).toLocaleDateString('fa-IR')}</td>
                         <td className="px-3 py-2 text-sm whitespace-nowrap">
                           {req.is_editable ? '✅ فعال' : '❌ غیرفعال'}
@@ -494,6 +607,42 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* مودال ویرایش محل خدمت */}
+      {showEditServiceLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4">ویرایش محل خدمت</h3>
+            <form onSubmit={handleUpdateServiceLocation}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">نام محل خدمت</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  value={editServiceLocationData.name}
+                  onChange={(e) => setEditServiceLocationData({ name: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base"
+                >
+                  ذخیره تغییرات
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditServiceLocationModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 text-sm sm:text-base"
+                >
+                  انصراف
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* مودال جزئیات درخواست */}
       {showDetailModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -504,6 +653,7 @@ const AdminDashboard: React.FC = () => {
               <p><strong>نام و نام خانوادگی:</strong> {selectedRequest.full_name}</p>
               <p><strong>شماره تماس:</strong> {selectedRequest.phone_number || '-'}</p>
               <p><strong>وضعیت اشتغال:</strong> {selectedRequest.employment_status}</p>
+              <p><strong>محل خدمت:</strong> {selectedRequest.service_location?.name || '-'}</p>
               <p><strong>تاریخ ثبت:</strong> {new Date(selectedRequest.submitted_at).toLocaleString('fa-IR')}</p>
               <p><strong>وضعیت ویرایش:</strong> {selectedRequest.is_editable ? 'فعال' : 'غیرفعال'}</p>
             </div>

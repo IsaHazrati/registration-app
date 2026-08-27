@@ -7,9 +7,11 @@ const PublicForm: React.FC = () => {
     employee_code: '',
     phone_number: '',
     employment_status: 'شاغل',
+    service_location_id: '',
     admin_description: ''
   });
   const [products, setProducts] = useState<any[]>([]);
+  const [serviceLocations, setServiceLocations] = useState<any[]>([]);
   const [requestItems, setRequestItems] = useState<{ [key: number]: number }>({});
   const [deadline, setDeadline] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,9 @@ const PublicForm: React.FC = () => {
       try {
         const productsRes = await axios.get('/api/products/public');
         setProducts(productsRes.data);
+
+        const serviceLocationsRes = await axios.get('/api/service-locations/public');
+        setServiceLocations(serviceLocationsRes.data);
         
         const deadlineRes = await axios.get('/api/settings/deadline');
         setDeadline(deadlineRes.data.edit_deadline);
@@ -98,6 +103,7 @@ const PublicForm: React.FC = () => {
           employee_code: existing.employee_code,
           phone_number: existing.phone_number || '',
           employment_status: existing.employment_status,
+          service_location_id: existing.service_location?.id ?? existing.service_location_id ?? '',
           admin_description: existing.admin_description || ''
         });
         
@@ -138,6 +144,7 @@ const PublicForm: React.FC = () => {
 
     const payload = {
       ...formData,
+      service_location_id: parseInt(formData.service_location_id as any),
       items: items
     };
 
@@ -183,6 +190,7 @@ const PublicForm: React.FC = () => {
         employee_code: '',
         phone_number: '',
         employment_status: 'شاغل',
+        service_location_id: '',
         admin_description: ''
       });
       setRequestItems({});
@@ -293,6 +301,25 @@ const PublicForm: React.FC = () => {
                   <span className="mr-2 text-sm">بازنشسته</span>
                 </label>
               </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                محل خدمت
+              </label>
+              <select
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                value={formData.service_location_id}
+                onChange={(e) => setFormData({...formData, service_location_id: e.target.value})}
+              >
+                <option value="" disabled>انتخاب کنید...</option>
+                {serviceLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mb-6">

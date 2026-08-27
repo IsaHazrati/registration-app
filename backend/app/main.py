@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sqlalchemy import text
 from . import models
 from .database import SessionLocal, engine
 from .models import Admin
@@ -10,6 +11,18 @@ import os
 
 # ====== ایجاد جدول‌های دیتابیس ======
 models.Base.metadata.create_all(bind=engine)
+
+# ====== مهاجرت ساده: افزودن ستون محل خدمت به جدول requests در صورت نبود ======
+# (چون از Alembic استفاده نشده، create_all جدول‌های موجود را تغییر نمی‌دهد)
+try:
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE requests ADD COLUMN IF NOT EXISTS service_location_id INTEGER REFERENCES service_locations(id)"
+        ))
+        conn.commit()
+    print("✅ ستون service_location_id بررسی/اضافه شد")
+except Exception as e:
+    print(f"⚠️ خطا در مهاجرت ستون service_location_id: {e}")
 
 app = FastAPI(title="Registration System", version="1.0.0")
 
@@ -46,12 +59,13 @@ def create_default_admin():
 # ================================================
 # ====== مسیرهای API ======
 # ================================================
-from .routers import products, requests, admin, settings
+from .routers import products, requests, admin, settings, service_locations
 
 app.include_router(products.router, prefix="/api/products", tags=["products"])
 app.include_router(requests.router, prefix="/api/requests", tags=["requests"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
+app.include_router(service_locations.router, prefix="/api/service-locations", tags=["service-locations"])  # ← فیلد جدید: محل خدمت
 
 # ================================================
 # ====== مسیر موقت برای ایجاد ادمین ======
