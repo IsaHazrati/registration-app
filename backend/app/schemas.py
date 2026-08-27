@@ -47,7 +47,7 @@ class RequestItem(RequestItemBase):
 
 # Request Schemas
 class RequestBase(BaseModel):
-    employee_code: str = Field(min_length=3, max_length=50)
+    employee_code: str = Field(min_length=8, max_length=50)
     full_name: str = Field(min_length=2, max_length=255)
     phone_number: Optional[str] = Field(None, max_length=20)
     employment_status: str

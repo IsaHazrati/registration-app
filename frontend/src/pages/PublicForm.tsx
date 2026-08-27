@@ -2,6 +2,31 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const PublicForm: React.FC = () => {
+  const fieldLabels: { [key: string]: string } = {
+    employee_code: 'کد پرسنلی',
+    full_name: 'نام و نام خانوادگی',
+    phone_number: 'شماره تماس',
+    employment_status: 'وضعیت اشتغال',
+    service_location_id: 'محل خدمت',
+    items: 'محصولات'
+  };
+
+  const getValidationErrorMessage = (error: any): string => {
+    const detail = error.response?.data?.detail;
+    if (!detail) return 'خطا در ثبت اطلاعات. لطفاً دوباره تلاش کنید.';
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d: any) => {
+          const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : '';
+          const label = fieldLabels[field] || field;
+          return `${label}: ${d.msg}`;
+        })
+        .join(' | ');
+    }
+    return 'خطا در ثبت اطلاعات. لطفاً دوباره تلاش کنید.';
+  };
+
   const [formData, setFormData] = useState({
     full_name: '',
     employee_code: '',
@@ -129,6 +154,20 @@ const PublicForm: React.FC = () => {
     setLoading(true);
     setMessage('');
 
+    if (formData.employee_code.trim().length < 8) {
+      setMessage('❌ کد پرسنلی باید حداقل ۸ کاراکتر باشد.');
+      setMessageType('error');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.service_location_id) {
+      setMessage('❌ لطفاً محل خدمت را انتخاب کنید.');
+      setMessageType('error');
+      setLoading(false);
+      return;
+    }
+
     const items = products.map(p => ({
       product_id: p.id,
       quantity: parseInt(requestItems[p.id] || 0)
@@ -165,6 +204,9 @@ const PublicForm: React.FC = () => {
         setMessageType('error');
       } else if (error.response?.status === 403) {
         setMessage('❌ امکان ویرایش این درخواست وجود ندارد (مهلت ویرایش به پایان رسیده است).');
+        setMessageType('error');
+      } else if (error.response?.status === 422) {
+        setMessage(`❌ ${getValidationErrorMessage(error)}`);
         setMessageType('error');
       } else {
         setMessage('❌ خطا در ثبت درخواست. لطفاً دوباره تلاش کنید.');
@@ -254,11 +296,13 @@ const PublicForm: React.FC = () => {
                 <input
                   type="text"
                   required
+                  minLength={8}
                   disabled={isEditing}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 text-sm"
                   value={formData.employee_code}
                   onChange={(e) => setFormData({...formData, employee_code: e.target.value})}
                   onBlur={handleEmployeeCodeBlur}
+                  placeholder="حداقل ۸ کاراکتر"
                 />
               </div>
               <div>
