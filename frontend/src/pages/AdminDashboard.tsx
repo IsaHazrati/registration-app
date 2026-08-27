@@ -34,21 +34,40 @@ const AdminDashboard: React.FC = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [productsRes, requestsRes, deadlineRes, serviceLocationsRes] = await Promise.all([
+      const [productsRes, requestsRes, deadlineRes, serviceLocationsRes] = await Promise.allSettled([
         axios.get('/api/products/public'),
         axios.get('/api/admin/requests', { headers }),
         axios.get('/api/settings/deadline'),
         axios.get('/api/service-locations/public')
       ]);
-      
-      setProducts(productsRes.data);
-      setRequests(requestsRes.data);
-      setDeadline(deadlineRes.data.edit_deadline || '');
-      setServiceLocations(serviceLocationsRes.data);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        navigate('/admin/login');
+
+      if (productsRes.status === 'fulfilled') {
+        setProducts(productsRes.value.data);
+      } else {
+        console.error('خطا در دریافت محصولات:', productsRes.reason);
       }
+
+      if (requestsRes.status === 'fulfilled') {
+        setRequests(requestsRes.value.data);
+      } else {
+        console.error('خطا در دریافت درخواست‌ها:', requestsRes.reason);
+        if (requestsRes.reason?.response?.status === 401) {
+          navigate('/admin/login');
+        }
+      }
+
+      if (deadlineRes.status === 'fulfilled') {
+        setDeadline(deadlineRes.value.data.edit_deadline || '');
+      } else {
+        console.error('خطا در دریافت مهلت ویرایش:', deadlineRes.reason);
+      }
+
+      if (serviceLocationsRes.status === 'fulfilled') {
+        setServiceLocations(serviceLocationsRes.value.data);
+      } else {
+        console.error('خطا در دریافت محل‌های خدمت:', serviceLocationsRes.reason);
+      }
+    } catch (error: any) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
