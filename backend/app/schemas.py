@@ -46,22 +46,24 @@ class RequestItem(RequestItemBase):
         from_attributes = True
 
 # Request Schemas
-class RequestBase(BaseModel):
+# نکته‌ی مهم: اسکیمای ورودی (RequestCreate) و خروجی (Request) عمداً کاملاً مستقل از هم تعریف شده‌اند.
+# قوانین اعتبارسنجی سخت‌گیرانه (مثل حداقل طول) فقط باید روی داده‌ی جدیدِ ورودی اعمال بشن،
+# نه روی داده‌های قدیمی‌ای که قبل از تغییر این قوانین در دیتابیس ثبت شده‌اند؛ وگرنه نمایش
+# لیست با اولین رکورد قدیمیِ ناسازگار، با خطای سرور متوقف می‌شود.
+class RequestCreate(BaseModel):
     employee_code: str = Field(min_length=8, max_length=50)
     full_name: str = Field(min_length=2, max_length=255)
     phone_number: Optional[str] = Field(None, max_length=20)
     employment_status: str
-    service_location_id: int  # ← فیلد جدید: محل خدمت
+    service_location_id: int  # ← فیلد جدید: محل خدمت (برای ثبت جدید اجباری است)
     admin_description: Optional[str] = None
+    items: List[RequestItemCreate]
 
     @validator('employment_status')
     def validate_status(cls, v):
         if v not in ['شاغل', 'بازنشسته']:
             raise ValueError('وضعیت اشتغال باید شاغل یا بازنشسته باشد')
         return v
-
-class RequestCreate(RequestBase):
-    items: List[RequestItemCreate]
 
     @model_validator(mode='after')
     def validate_has_product(self) -> 'RequestCreate':
@@ -83,13 +85,20 @@ class RequestUpdate(BaseModel):
             raise ValueError('شما هیچ محصولی انتخاب نکرده‌اید')
         return self
 
-class Request(RequestBase):
+class Request(BaseModel):
+    # اسکیمای خروجی/نمایش: عمداً بدون قیود سخت‌گیرانه (min_length و ...) تعریف شده
+    # تا داده‌های قدیمی‌ای که با قوانین قبلی ثبت شده‌اند هم همیشه به‌درستی نمایش داده شوند.
     id: int
+    employee_code: str
+    full_name: str
+    phone_number: Optional[str] = None
+    employment_status: str
+    service_location_id: Optional[int] = None  # ← فیلد جدید: محل خدمت
+    admin_description: Optional[str] = None
     submitted_at: datetime
     updated_at: Optional[datetime]
     is_editable: bool
     items: List[RequestItem]
-    service_location_id: Optional[int] = None  # ← اصلاح: برای درخواست‌های قدیمی/بدون محل خدمت نباید اجباری باشد
     service_location: Optional[ServiceLocation] = None  # ← فیلد جدید: محل خدمت
     class Config:
         from_attributes = True
