@@ -394,13 +394,15 @@ const PublicForm: React.FC = () => {
                   <div className="flex items-center justify-end mt-1">
                     <label className="text-sm text-gray-600 ml-2">تعداد:</label>
                     <input
-                      type="number"
-                      min="0"
-                      max={product.max_quantity}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       className="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm"
                       value={requestItems[product.id] || 0}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => {
-                        const val = parseInt(e.target.value) || 0;
+                        const digitsOnly = e.target.value.replace(/[^0-9]/g, '');
+                        const val = parseInt(digitsOnly) || 0;
                         setRequestItems({
                           ...requestItems,
                           [product.id]: Math.min(val, product.max_quantity),

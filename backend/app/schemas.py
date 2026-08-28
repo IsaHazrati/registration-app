@@ -89,6 +89,7 @@ class Request(RequestBase):
     updated_at: Optional[datetime]
     is_editable: bool
     items: List[RequestItem]
+    service_location_id: Optional[int] = None  # ← اصلاح: برای درخواست‌های قدیمی/بدون محل خدمت نباید اجباری باشد
     service_location: Optional[ServiceLocation] = None  # ← فیلد جدید: محل خدمت
     class Config:
         from_attributes = True
